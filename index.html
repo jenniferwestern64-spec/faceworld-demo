@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Surprise — Consent Form</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#f7fafc;color:#111;margin:0;padding:20px}
+    .container{max-width:760px;margin:32px auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 6px 22px rgba(16,24,40,0.06)}
+    h1{color:#0b61d6}
+    p.lead{color:#333}
+    form{margin-top:16px}
+    label{display:block;margin:10px 0 6px;font-weight:600}
+    input[type=text],input[type=email],textarea{width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px}
+    textarea{min-height:100px}
+    .consent{margin-top:12px}
+    .consent input{margin-right:8px}
+    button{background:#0b61d6;color:#fff;border:none;padding:10px 14px;border-radius:6px;font-weight:700;cursor:pointer}
+    .note{font-size:13px;color:#374151;margin-top:12px}
+    .message{margin-top:12px;padding:10px;border-radius:6px;background:#f0f9ff;color:#0369a1}
+    .video{margin-top:18px}
+    .footer{margin-top:18px;font-size:13px;color:#6b7280}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Hey — share your details (consent required)</h1>
+    <p class="lead">This page will collect only the information you voluntarily provide. By checking the consent box and submitting this form you explicitly agree to share your contact information with the site owner for the purpose you choose below.</p>
+
+    <div class="video">
+      <!-- A playful rickroll — clearly visible so the visitor is not deceived -->
+      <p><strong>For fun:</strong> enjoy this track after you submit (you can also play it now):</p>
+      <iframe width="100%" height="315" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Rick Astley - Never Gonna Give You Up" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+
+    <form id="consentForm" action="https://formspree.io/f/your-form-id" method="POST" novalidate>
+      <!-- Replace the action URL with your Formspree form endpoint or another form handler. See INSTRUCTIONS.md in the repo. -->
+
+      <label for="fullname">Full name</label>
+      <input id="fullname" name="fullname" type="text" placeholder="Jane Doe" required>
+
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" placeholder="jane@example.com" required>
+
+      <label for="address">Mailing address (street, city, state/province, ZIP/postal)</label>
+      <textarea id="address" name="address" placeholder="123 Main St, Springfield, IL 62704" required></textarea>
+
+      <label for="purpose">Why are you sharing this info? (optional)</label>
+      <input id="purpose" name="purpose" type="text" placeholder="E.g. for a surprise gift">
+
+      <div class="consent">
+        <label><input id="consentCheckbox" name="consent" type="checkbox"> I confirm I am voluntarily sharing my information and I consent to the site owner using it for the purpose stated above.</label>
+      </div>
+
+      <!-- Formspree extras: subject and reply-to (optional) -->
+      <input type="hidden" name="_subject" value="New consented submission">
+      <input type="hidden" name="_replyto" value="">
+
+      <div style="margin-top:12px">
+        <button id="submitBtn" type="submit">Submit (consent required)</button>
+      </div>
+
+      <div id="status" class="message" style="display:none"></div>
+
+      <p class="note">Privacy note: this form collects only what you type above. Do not submit someone else's private information without their permission. By submitting you are providing explicit consent.</p>
+    </form>
+
+    <div class="footer">
+      <p>Deployment and form instructions are in the repository INSTRUCTIONS.md. This page is intended for lawful, consensual use only.</p>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const form = document.getElementById('consentForm');
+      const consent = document.getElementById('consentCheckbox');
+      const status = document.getElementById('status');
+      const submitBtn = document.getElementById('submitBtn');
+      const replyToInput = form.querySelector('input[name="_replyto"]');
+
+      // update _replyto to the email field value before submit (if present)
+      form.addEventListener('submit', function(e){
+        e.preventDefault();
+        status.style.display = 'none';
+        // validate consent
+        if (!consent.checked) {
+          status.style.display = 'block';
+          status.textContent = 'You must check the consent box before submitting.';
+          status.style.background = '#fff4e6';
+          status.style.color = '#92400e';
+          return;
+        }
+        // basic required fields check
+        const name = document.getElementById('fullname').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const address = document.getElementById('address').value.trim();
+        if (!name || !email || !address) {
+          status.style.display = 'block';
+          status.textContent = 'Please fill in your name, email, and address.';
+          status.style.background = '#fff4e6';
+          status.style.color = '#92400e';
+          return;
+        }
+
+        // set reply-to for Formspree
+        if (replyToInput) replyToInput.value = email;
+
+        // submit via fetch so we can show friendly status without leaving page
+        const action = form.getAttribute('action');
+        const data = new FormData(form);
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+
+        fetch(action, {method: 'POST', body: data, headers: {'Accept':'application/json'}})
+          .then(response => response.json ? response.json() : response.text())
+          .then(data => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit (consent required)';
+            status.style.display = 'block';
+            status.style.background = '#ecfdf5';
+            status.style.color = '#065f46';
+            status.textContent = 'Thanks — your submission was received (if your form endpoint is configured).';
+            // clear fields (except consent) for safety
+            document.getElementById('address').value = '';
+            // do not auto-redirect or reveal sensitive output
+          })
+          .catch(err => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit (consent required)';
+            status.style.display = 'block';
+            status.style.background = '#fff4e6';
+            status.style.color = '#92400e';
+            status.textContent = 'Submission failed. Check your form endpoint configuration (see INSTRUCTIONS.md) or try again.';
+          });
+      });
+
+      // small UX: enable Enter on consent checkbox label area
+      consent.addEventListener('keypress', function(e){ if (e.key === 'Enter') consent.checked = !consent.checked; });
+    })();
+  </script>
+</body>
+</html>
